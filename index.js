@@ -26,7 +26,7 @@ function updatePresence(client) {
     return acc + guild.channels.cache.filter(c => c.name.startsWith('ticket-')).size;
   }, 0);
 
-  client.user.setActivity(`${openTickets} Open Tickets`, { type: 4 }); // Custom status
+  client.user.setActivity(`${openTickets} Open Tickets`, { type: 4 });
 }
 
 client.once('ready', async () => {
