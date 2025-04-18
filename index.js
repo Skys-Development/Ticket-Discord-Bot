@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField, SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const config = require('./config.js');
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -24,7 +25,6 @@ if (fs.existsSync('./embed.js')) {
 client.once('ready', async () => {
   console.log(`${client.user.tag} is online!`);
 
-  // Ensure the bot is ready to access guilds and channels
   client.guilds.cache.forEach(async (guild) => {
     try {
       const embedChannel = await guild.channels.fetch(config.tickets.sendEmbedChannel);
@@ -63,10 +63,7 @@ client.once('ready', async () => {
 
       const openTickets = guild.channels.cache.filter(c => c.name.startsWith('ticket-'));
       client.user.setPresence({
-        activities: [{
-          name: `Watching ${openTickets.size} Tickets`,
-          type: 'WATCHING',
-        }],
+        activities: [{ name: `Watching ${openTickets.size} Tickets`, type: 'WATCHING' }],
         status: 'online',
       });
     } catch (error) {
@@ -107,10 +104,6 @@ client.on('interactionCreate', async (interaction) => {
           allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
         },
         {
-          id: config.tickets.whitelistRole,
-          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages],
-        },
-        {
           id: interaction.guild.id,
           deny: [PermissionsBitField.Flags.ViewChannel],
         },
@@ -147,20 +140,16 @@ client.on('interactionCreate', async (interaction) => {
       logChannel.send({ embeds: [logEmbed] });
     }
 
-    // Update bot status after creating a ticket
     const openTickets = interaction.guild.channels.cache.filter(c => c.name.startsWith('ticket-'));
     client.user.setPresence({
-      activities: [{
-        name: `Watching ${openTickets.size} Tickets`,
-        type: 'WATCHING',
-      }],
+      activities: [{ name: `Watching ${openTickets.size} Tickets`, type: 'WATCHING' }],
       status: 'online',
     });
   }
 
   if (interaction.customId === 'close_ticket') {
     const member = await interaction.guild.members.fetch(userId);
-    if (!member.roles.cache.has(config.tickets.whitelistRole)) {
+    if (!member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
       return interaction.reply({ content: "🚫 You don't have permission to close tickets.", flags: 64 });
     }
 
@@ -199,13 +188,9 @@ client.on('interactionCreate', async (interaction) => {
 
     await interaction.channel.delete();
 
-    // Update bot status after closing a ticket
     const openTickets = interaction.guild.channels.cache.filter(c => c.name.startsWith('ticket-'));
     client.user.setPresence({
-      activities: [{
-        name: `Watching ${openTickets.size} Tickets`,
-        type: 'WATCHING',
-      }],
+      activities: [{ name: `Watching ${openTickets.size} Tickets`, type: 'WATCHING' }],
       status: 'online',
     });
   }
@@ -215,16 +200,13 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Register the ping command
 client.on('ready', async () => {
   const pingCommand = new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Get the bot\'s latency.');
-
   try {
     await client.application.commands.set([pingCommand.toJSON()]);
-  } catch (error) {
-  }
+  } catch (error) {}
 });
 
 client.on('interactionCreate', async (interaction) => {
