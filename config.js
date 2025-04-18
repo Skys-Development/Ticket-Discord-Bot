@@ -4,7 +4,6 @@ module.exports = {
     ownerID: '',
     category: '', 
     staffRole: '',
-    whitelistRole: '',
     logChannel: '',
     sendEmbedChannel: '',
   },
