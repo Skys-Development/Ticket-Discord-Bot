@@ -38,14 +38,20 @@ client.once('ready', async () => {
       if (!embedChannel || !embedChannel.isTextBased()) return;
 
       const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setLabel('Create Ticket').setStyle(ButtonStyle.Secondary).setCustomId('create_ticket')
+        new ButtonBuilder().setLabel('General Support').setStyle(ButtonStyle.Secondary).setCustomId('general_support'),
+        new ButtonBuilder().setLabel('Partner Request').setStyle(ButtonStyle.Secondary).setCustomId('partner_request'),
+        new ButtonBuilder().setLabel('Bug Report').setStyle(ButtonStyle.Secondary).setCustomId('bug_report'),
+        new ButtonBuilder().setLabel('Other Support').setStyle(ButtonStyle.Secondary).setCustomId('other_support')
       );
 
       const embed = new EmbedBuilder()
-        .setTitle("Open a Ticket")
-        .setDescription("Click the button below to create a ticket. Our team will assist you shortly.")
-        .setColor("#842abe")
-        .setFooter({ text: "Tickets | Powered by William", iconURL: client.user.displayAvatarURL() });
+        .setTitle("Need assistance? Our support team is here to help!")
+        .setDescription("Whether you're experiencing technical issues, have questions about billing, want to report a bug, or need help with something else, our dedicated team is ready to provide fast and friendly support. Select one of the options below to open a ticket, and we'll get back to you as soon as possible!")
+        .setColor("#000000")
+        .setFooter({ 
+          text: `${guild.name}`, 
+          iconURL: guild.iconURL() 
+        });
 
       if (!embedMessageID) {
         const sentMessage = await embedChannel.send({ embeds: [embed], components: [row] });
@@ -74,7 +80,7 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
   const userId = interaction.user.id;
 
-  if (interaction.customId === 'create_ticket') {
+  if (interaction.customId === 'general_support' || interaction.customId === 'partner_request' || interaction.customId === 'bug_report' || interaction.customId === 'other_support') {
     const cooldown = cooldowns.get(userId);
     const now = Date.now();
     if (cooldown && cooldown > now) {
@@ -109,14 +115,17 @@ client.on('interactionCreate', async (interaction) => {
     });
 
     const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setLabel("Close").setCustomId("close_ticket").setStyle(ButtonStyle.Primary)
+      new ButtonBuilder().setLabel("Close Ticket").setCustomId("close_ticket").setStyle(ButtonStyle.Primary)
     );
 
     const embed = new EmbedBuilder()
       .setTitle(`${interaction.user.username}'s Ticket`)
-      .setDescription("Please describe your issue and a staff member will be with you shortly.")
-      .setColor("#2a043b")
-      .setFooter({ text: `User ID: ${interaction.user.id}` });
+      .setDescription(`Ticket Type: ${interaction.customId.replace('_', ' ').toUpperCase()}\nPlease describe your issue and a staff member will be with you shortly.`)
+      .setColor("#000000")
+      .setFooter({ 
+        text: `${interaction.guild.name}`, 
+        iconURL: interaction.guild.iconURL() 
+      });
 
     ticketChannel.send({
       content: `<@&${config.tickets.staffRole}> New Ticket Created!`,
@@ -133,16 +142,20 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.customId === 'close_ticket') {
     const member = await interaction.guild.members.fetch(userId);
-    if (!member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
-      return interaction.reply({ content: "You don't have permission to close tickets.", flags: 64 });
+    const ticketChannel = interaction.channel;
+
+    if (ticketChannel.name.startsWith('ticket-')) {
+      if (!member.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
+        return interaction.reply({ content: "You don't have permission to close tickets.", flags: 64 });
+      }
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setLabel("Yes, Close Ticket").setCustomId("confirm_close_ticket").setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setLabel("No, Cancel").setCustomId("cancel_close_ticket").setStyle(ButtonStyle.Danger)
+      );
+
+      await interaction.reply({ content: `Are you sure you want to close this ticket?`, components: [row], flags: 64 });
     }
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setLabel("Yes, Close Ticket").setCustomId("confirm_close_ticket").setStyle(ButtonStyle.Success),
-      new ButtonBuilder().setLabel("No, Cancel").setCustomId("cancel_close_ticket").setStyle(ButtonStyle.Danger)
-    );
-
-    await interaction.reply({ content: `Are you sure you want to close this ticket?`, components: [row], flags: 64 });
   }
 
   if (interaction.customId === 'confirm_close_ticket') {
